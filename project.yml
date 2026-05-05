@@ -1,0 +1,21 @@
+name: GameHub
+options:
+  bundleIdPrefix: com.gamehub.emulator
+targets:
+  GameHub:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [GameHub]
+    settings:
+      base:
+        INFOPLIST_FILE: GameHub/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.gamehub.emulator.pro
+        MARKETING_VERSION: 2.0
+        CURRENT_PROJECT_VERSION: 1
+        # High Performance Settings
+        ENABLE_BITCODE: NO
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+        # Required for JIT and Memory Intensive Games (GTA 5/Forza)
+        APPLE_COMMON_OBJ_C_DYNAMIC_CAST_CHECK: YES
