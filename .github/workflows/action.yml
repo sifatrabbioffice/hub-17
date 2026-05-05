@@ -1,4 +1,20 @@
-- name: Generate Project Structure
+name: Build GameHub Pro (Path Fix)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: brew install xcodegen
+
+      - name: Generate Project Structure
         run: |
           mkdir -p GameHub
           cat <<EOF > GameHub/Info.plist
@@ -26,3 +42,68 @@
           </dict>
           </plist>
           EOF
+
+          # 3. Create the Entitlements file (For JIT and high performance)
+          cat <<EOF > GameHub/GameHub.entitlements
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>get-task-allow</key>
+              <true/>
+              <key>com.apple.private.security.no-sandbox</key>
+              <true/>
+              <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+          # 4. Create the App Code
+          cat <<EOF > GameHub/App.swift
+          import SwiftUI
+          @main
+          struct GameHubApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      ZStack {
+                          Color.black.ignoresSafeArea()
+                          VStack {
+                              Text("GAMEHUB PRO").font(.largeTitle).fontWeight(.black).foregroundColor(.blue)
+                              Text("Emulator Engine: ACTIVE").foregroundColor(.green)
+                              Spacer()
+                              Text("Ready for GTA V / Forza").font(.caption).foregroundColor(.gray)
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+
+      - name: Run XcodeGen
+        run: xcodegen generate
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project GameHub.xcodeproj \
+            -scheme GameHub \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/GameHub.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Export IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/GameHub.xcarchive/Products/Applications/*.app build/Payload/
+          cd build
+          zip -qr GameHub_Final.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameHub-Pro-Build
+          path: build/GameHub_Final.ipa
